@@ -107,7 +107,7 @@ def get_tap_properties(tap=None, temp_dir=None):
             'default_replication_method': 'LOG_BASED',
             'default_data_flattening_max_level': 0
         },
-        'tap-postgres': {
+        'dp-tap-postgres': {
             'tap_config_extras': {
                 # Set tap_id to locate the corresponding replication slot
                 'tap_id': tap['id'] if tap else None,
