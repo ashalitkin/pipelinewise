@@ -1,0 +1,1 @@
+dp-pipelinewise-tap-postgres==1.8.10
