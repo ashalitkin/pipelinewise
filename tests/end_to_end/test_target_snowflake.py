@@ -1,3 +1,4 @@
+import decimal
 import gzip
 import os
 import tempfile
@@ -262,13 +263,12 @@ class TestTargetSnowflake:
             'public.country': 1,    # FULL_TABLE : fastsync only
             'public2.wearehere': 1  # FULL_TABLE : fastsync only
         }
-        for schema_table in expected_archive_files_count:
+        for schema_table, expected_archive_files in expected_archive_files_count.items():
             schema, table = schema_table.split('.')
             files_in_s3_archive = s3_client.list_objects(
                 Bucket=s3_bucket,
                 Prefix=('{}/postgres_to_sf_archive_load_files/{}'.format(archive_s3_prefix, table))).get('Contents')
 
-            expected_archive_files = expected_archive_files_count[schema_table]
             if files_in_s3_archive is None or len(files_in_s3_archive) != expected_archive_files:
                 raise Exception('files_in_archive for {} is {}. Expected archive files count: {}'.format(
                     table,
@@ -345,12 +345,15 @@ class TestTargetSnowflake:
         assertions.assert_run_tap_success(TAP_MONGODB_ID, TARGET_ID, ['fastsync', 'singer'])
         assert_columns_exist('listings')
         assert_columns_exist('my_collection')
+        assert_columns_exist('all_datatypes')
 
         listing_count = self.mongodb_con['listings'].count_documents({})
         my_coll_count = self.mongodb_con['my_collection'].count_documents({})
+        all_datatypes_count = self.mongodb_con['all_datatypes'].count_documents({})
 
         assert_row_counts_equal('ppw_e2e_tap_mongodb', 'listings', listing_count)
         assert_row_counts_equal('ppw_e2e_tap_mongodb', 'my_collection', my_coll_count)
+        assert_row_counts_equal('ppw_e2e_tap_mongodb', 'all_datatypes', all_datatypes_count)
 
         result_insert = self.mongodb_con.my_collection.insert_many([
             {
@@ -368,6 +371,7 @@ class TestTargetSnowflake:
             {
                 'uuid': uuid.uuid4(),
                 'id': 1003,
+                'decimal': bson.Decimal128(decimal.Decimal('5.64547548425446546546644')),
                 'nested_json': {'a': 1, 'b': 3, 'c': {'key': bson.datetime.datetime(2020, 5, 3, 10, 0, 0)}}
             }
         ])
