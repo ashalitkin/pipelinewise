@@ -445,7 +445,7 @@ def get_fastsync_bin(venv_dir, tap_type, target_type):
     """
     Get the absolute path of a fastsync executable
     """
-    source = tap_type.replace('tap-', '')
+    source = tap_type.replace('dp-tap-', '').replace('tap-', '')
     target = target_type.replace('target-', '')
     fastsync_name = f'{source}-to-{target}'
 
