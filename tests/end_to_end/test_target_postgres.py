@@ -1,3 +1,4 @@
+import decimal
 import os
 import uuid
 from datetime import datetime
@@ -114,6 +115,28 @@ class TestTargetPostgres:
         assertions.assert_row_counts_equal(self.run_query_tap_mysql, self.run_query_target_postgres)
         assertions.assert_all_columns_exist(self.run_query_tap_mysql, self.run_query_target_postgres,
                                             mysql_to_postgres.tap_type_to_target_type, {'blob_col'})
+
+        # Checking if mask-date transformation is working
+        result = self.run_query_target_postgres(
+            'SELECT count(1) FROM ppw_e2e_tap_mysql."address" '
+            'where date_part(\'month\',date_created)::int != 1 or '
+            'date_part(\'day\', date_created)::int != 1;')[0][0]
+
+        assert result == 0
+
+        # Checking if conditional MASK-NUMBER transformation is working
+        result = self.run_query_target_postgres(
+            'SELECT count(1) FROM ppw_e2e_tap_mysql."address" '
+            'where zip_code_zip_code_id != 0 and street_number ~ \'[801]\';')[0][0]
+
+        assert result == 0
+
+        # Checking if conditional SET-NULL transformation is working
+        result = self.run_query_target_postgres(
+            'SELECT count(1) FROM ppw_e2e_tap_mysql."edgydata" '
+            'where "group" is not null and "case" = \'B\';')[0][0]
+
+        assert result == 0
 
     @pytest.mark.dependency(depends=['import_config'])
     def test_resync_mariadb_to_pg(self, tap_mariadb_id=TAP_MARIADB_ID):
@@ -250,12 +273,15 @@ class TestTargetPostgres:
         assertions.assert_run_tap_success(TAP_MONGODB_ID, TARGET_ID, ['fastsync', 'singer'])
         assert_columns_exist('listings')
         assert_columns_exist('my_collection')
+        assert_columns_exist('all_datatypes')
 
         listing_count = self.mongodb_con['listings'].count_documents({})
         my_coll_count = self.mongodb_con['my_collection'].count_documents({})
+        all_datatypes_count = self.mongodb_con['all_datatypes'].count_documents({})
 
         assert_row_counts_equal('ppw_e2e_tap_mongodb', 'listings', listing_count)
         assert_row_counts_equal('ppw_e2e_tap_mongodb', 'my_collection', my_coll_count)
+        assert_row_counts_equal('ppw_e2e_tap_mongodb', 'all_datatypes', all_datatypes_count)
 
         result_insert = self.mongodb_con.my_collection.insert_many([
             {
@@ -273,6 +299,7 @@ class TestTargetPostgres:
             {
                 'uuid': uuid.uuid4(),
                 'id': 1003,
+                'decimal': bson.Decimal128(decimal.Decimal('5.64547548425446546546644')),
                 'nested_json': {'a': 1, 'b': 3, 'c': {'key': bson.datetime.datetime(2020, 5, 3, 10, 0, 0)}}
             }
         ])

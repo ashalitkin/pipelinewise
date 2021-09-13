@@ -38,7 +38,7 @@ following the steps in the :ref:`generating_pipelines` section.
 
 Example YAML for ``tap-s3-csv``:
 
-.. code-block:: bash
+.. code-block:: yaml
 
     ---
 
@@ -91,6 +91,12 @@ Example YAML for ``tap-s3-csv``:
                                               #            be de-duplicated and could cause
                                               #            duplicates. Always try selecting
                                               #            a reasonable key from the CSV file
+    #batch_wait_limit_seconds: 3600           # Optional: Maximum time to wait for `batch_size_rows`. Available only for snowflake target.
+
+    # Options only for Snowflake target
+    #archive_load_files: False                      # Optional: when enabled, the files loaded to Snowflake will also be stored in `archive_load_files_s3_bucket`
+    #archive_load_files_s3_prefix: "archive"        # Optional: When `archive_load_files` is enabled, the archived files will be placed in the archive S3 bucket under this prefix.
+    #archive_load_files_s3_bucket: "<BUCKET_NAME>"  # Optional: When `archive_load_files` is enabled, the archived files will be placed in this bucket. (Default: the value of `s3_bucket` in target snowflake YAML)
 
 
     # ------------------------------------------------------------------------------

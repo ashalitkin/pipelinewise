@@ -61,6 +61,9 @@ make_virtualenv() {
     source $VENV_DIR/$1/bin/activate
     python3 -m pip install --upgrade pip setuptools wheel
 
+    if [ -f "pre_requirements.txt" ]; then
+        python3 -m pip install --upgrade -r pre_requirements.txt
+    fi
     if [ -f "requirements.txt" ]; then
         python3 -m pip install --upgrade -r requirements.txt
     fi
@@ -123,7 +126,7 @@ print_installed_connectors() {
 # Parse command line arguments
 for arg in "$@"; do
     case $arg in
-        # Auto accept license agreemnets. Useful if PipelineWise installed by an automated script
+        # Auto accept license agreements. Useful if PipelineWise installed by an automated script
         --acceptlicenses)
             ACCEPT_LICENSES="YES"
             ;;
@@ -183,6 +186,7 @@ DEFAULT_CONNECTORS=(
     target-snowflake
     target-redshift
     target-postgres
+    target-bigquery
     transform-field
 )
 EXTRA_CONNECTORS=(
@@ -199,6 +203,9 @@ if [[ -z $CONNECTORS ]]; then
         install_connector $i
     done
 
+# don't install any connectors if --connectors=none passed
+elif [[ $CONNECTORS == "none" ]]; then
+  echo "No connectors will be installed"
 
 # Install every available connectors if --connectors=all passed
 elif [[ $CONNECTORS == "all" ]]; then
@@ -226,7 +233,10 @@ echo "--------------------------------------------------------------------------
 echo "PipelineWise installed successfully in $((end_time-start_time)) seconds"
 echo "--------------------------------------------------------------------------"
 
-print_installed_connectors
+if [[ $CONNECTORS != "none" ]]; then
+  print_installed_connectors
+fi
+
 if [[ $NO_USAGE != "YES" ]]; then
     echo
     echo "To start CLI:"

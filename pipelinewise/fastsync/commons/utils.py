@@ -3,8 +3,10 @@ import json
 import multiprocessing
 import os
 import logging
+import datetime
 
 from typing import Dict
+from pipelinewise.cli.utils import generate_random_string
 
 LOGGER = logging.getLogger(__name__)
 
@@ -33,13 +35,13 @@ def get_cpu_cores():
 
 
 def load_json(path):
-    with open(path) as fil:
+    with open(path, encoding='utf-8') as fil:
         return json.load(fil)
 
 
 def save_dict_to_json(path, data):
     LOGGER.info('Saving new state file to %s', path)
-    with open(path, 'w') as fil:
+    with open(path, 'w', encoding='utf-8') as fil:
         fil.write(json.dumps(data))
 
 
@@ -373,3 +375,40 @@ def get_pool_size(tap: Dict) -> int:
         return cpu_cores
 
     return min(fastsync_parallelism, cpu_cores)
+
+
+def gen_export_filename(tap_id: str,
+                        table: str,
+                        suffix: str = None,
+                        postfix: str = None,
+                        ext: str = None) -> str:
+    """
+    Generates a unique filename used for exported fastsync data that avoids file name collision
+
+    Default pattern:
+        pipelinewise_<tap_id>_<table>_<timestamp_with_ms>_fastsync_<random_string>.csv.gz
+
+    Args:
+        tap_id: Unique tap id
+        table: Name of the table to export
+        suffix: Generated filename suffix. Defaults to current timestamp in milliseconds
+        postfix: Generated filename postfix. Defaults to a random 8 character length string
+        ext: Filename extension. Defaults to .csv.gz
+
+    Returns:
+        Unique filename as a string
+    """
+    if not suffix:
+        suffix = datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f')
+
+    if not postfix:
+        postfix = generate_random_string()
+
+    if not ext:
+        ext = 'csv.gz'
+
+    return 'pipelinewise_{}_{}_{}_fastsync_{}.{}'.format(tap_id,
+                                                         table,
+                                                         suffix,
+                                                         postfix,
+                                                         ext)
