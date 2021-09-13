@@ -7,7 +7,7 @@ class ConnectorType(enum.Enum):
     Todo: add more
     """
     TAP_MYSQL = 'tap-mysql'
-    TAP_POSTGRES = 'tap-postgres'
+    TAP_POSTGRES = 'dp-tap-postgres'
     TAP_MONGODB = 'tap-mongodb'
     TAP_S3_CSV = 'tap-s3-csv'
 
