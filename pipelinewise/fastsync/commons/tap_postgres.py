@@ -13,7 +13,7 @@ from . import utils, split_gzip
 from ...utils import safe_column_name
 
 LOGGER = logging.getLogger(__name__)
-
+TRY_NUMBER = 15
 
 class FastSyncTapPostgres:
     """
@@ -457,12 +457,21 @@ class FastSyncTapPostgres:
         FROM {}."{}") TO STDOUT with CSV DELIMITER ','
         """.format(','.join(column_safe_sql_values), schema_name, table_name)
         LOGGER.info('Exporting data: %s', sql)
+        attempt = 0
+        while True:
+            try:
+                gzip_splitter = split_gzip.open(path,
+                                                mode='wb',
+                                                chunk_size_mb=split_file_chunk_size_mb,
+                                                max_chunks=split_file_max_chunks if split_large_files else 0,
+                                                compress=compress)
 
-        gzip_splitter = split_gzip.open(path,
-                                        mode='wb',
-                                        chunk_size_mb=split_file_chunk_size_mb,
-                                        max_chunks=split_file_max_chunks if split_large_files else 0,
-                                        compress=compress)
+                with gzip_splitter as split_gzip_files:
+                    self.curr.copy_expert(sql, split_gzip_files, size=131072)
 
-        with gzip_splitter as split_gzip_files:
-            self.curr.copy_expert(sql, split_gzip_files, size=131072)
+            except Exception as e:
+                LOGGER.error("error on fastsync for a stream, attempt %s, stream id: %s. Message: %s", str(attempt), stream['tap_stream_id'], e)
+                if attempt > TRY_NUMBER:
+                    raise e
+                else:
+                    attempt = attempt + 1
