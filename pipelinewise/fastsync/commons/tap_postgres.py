@@ -470,7 +470,7 @@ class FastSyncTapPostgres:
                     self.curr.copy_expert(sql, split_gzip_files, size=131072)
                 return
             except Exception as e:
-                LOGGER.error("error on fastsync for a stream, attempt %s, stream id: %s. Message: %s", str(attempt), stream['tap_stream_id'], e)
+                LOGGER.error("error on fastsync for a stream, attempt %s, table_name: %s. Message: %s", str(attempt), table_name, e)
                 if attempt > TRY_NUMBER:
                     raise e
                 else:
