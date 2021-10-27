@@ -1025,10 +1025,28 @@ class PipelineWise:
                                            config=tap_config,
                                            properties=tap_properties_fastsync,
                                            state=tap_state)
+                    try:
+                        self.run_tap_fastsync(tap=tap_params,
+                                              target=target_params,
+                                              transform=transform_params)
+                    except Exception as exc:
+                        self._print_tap_run_summary(self.STATUS_FAILED, start_time, datetime.now())
+                        self.logger.error(f'{tap_id} tap failed, trying singer way', exc)
+                        self.logger.info('Fallback, trying singer for the tables we couldn not sync with fastsync: %s', fastsync_stream_ids)
+                        self.tap_run_log_file = os.path.join(log_dir, f'{target_id}-{tap_id}-{current_time}-fallback.singer.log')
+                        tap_params = TapParams(id=tap_id,
+                                               type=tap_type,
+                                               bin=self.tap_bin,
+                                               python_bin=self.tap_python_bin,
+                                               config=tap_config,
+                                               properties=tap_properties_fastsync,
+                                               state=tap_state)
 
-                    self.run_tap_fastsync(tap=tap_params,
-                                          target=target_params,
-                                          transform=transform_params)
+                        self.run_tap_singer(tap=tap_params,
+                                            target=target_params,
+                                            transform=transform_params,
+                                            stream_buffer_size=stream_buffer_size)
+
                 else:
                     self.logger.info('No table available that needs to be sync by fastsync')
 
